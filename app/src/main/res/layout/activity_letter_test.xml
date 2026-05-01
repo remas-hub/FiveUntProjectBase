@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- اختبار الحروف — سبينر صعوبة، زر بدء، قائمة سجل، وهيدر -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F5F5F5">
+
+    <include
+        android:id="@+id/toolbar"
+        layout="@layout/toolbar_custom" />
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp"
+            android:gravity="center_horizontal">
+
+            <!-- إعداد -->
+            <LinearLayout
+                android:id="@+id/panelSetup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
+
+                <TextView
+                    android:id="@+id/tvSetupTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="اختبار الحروف"
+                    android:textColor="#2E7D32"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:textAlignment="center"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView
+                    android:id="@+id/tvSetupInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textColor="#424242"
+                    android:textSize="16sp"
+                    android:lineSpacingExtra="4dp"
+                    android:gravity="center"
+                    android:textAlignment="center"
+                    android:layout_marginBottom="16dp" />
+
+                <LinearLayout
+                    android:id="@+id/rowPickCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:visibility="gone"
+                    android:layout_marginBottom="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="عدد الحروف في هذا الاختبار:"
+                        android:textSize="16sp"
+                        android:layout_marginEnd="12dp" />
+
+                    <Spinner
+                        android:id="@+id/spinnerLetterCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minHeight="48dp" />
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/btnStartQuiz"
+                    android:layout_width="132dp"
+                    android:layout_height="132dp"
+                    android:text="بدء\nالاختبار"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:textAlignment="center"
+                    android:includeFontPadding="false"
+                    android:layout_marginBottom="20dp" />
+
+                <!-- أسفل زر البدء: سجل الاختبارات السابقة -->
+                <TextView
+                    android:id="@+id/tvHistoryTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="⭐ الاختبارات السابقة"
+                    android:textColor="#E65100"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:gravity="start"
+                    android:textAlignment="viewStart"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="اضغط على الصف لعرض نتائج الحروف ▼"
+                    android:textColor="#8D6E63"
+                    android:textSize="16sp"
+                    android:layout_marginBottom="10dp"
+                    android:gravity="start"
+                    android:textAlignment="viewStart" />
+
+                <TextView
+                    android:id="@+id/tvHistoryEmpty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="لا توجد نتائج بعد. أنهِ اختباراً كاملاً ثم ارجع هنا!"
+                    android:textColor="#5D4037"
+                    android:textSize="18sp"
+                    android:lineSpacingExtra="6dp"
+                    android:gravity="start"
+                    android:textAlignment="viewStart"
+                    android:paddingBottom="12dp" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvQuizHistory"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    android:visibility="gone"
+                    android:clipToPadding="false"
+                    android:paddingBottom="8dp" />
+            </LinearLayout>
+
+            <!-- أسئلة -->
+            <LinearLayout
+                android:id="@+id/panelQuiz"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center_horizontal"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvQuizProgress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="16sp"
+                    android:textColor="#616161"
+                    android:gravity="center"
+                    android:textAlignment="center"
+                    android:layout_marginBottom="16dp" />
+
+                <TextView
+                    android:id="@+id/tvQuizLetter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:text="🔊"
+                    android:textSize="64sp"
+                    android:textStyle="bold"
+                    android:textColor="#2E7D32"
+                    android:gravity="center"
+                    android:textAlignment="center"
+                    android:padding="16dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="استمع إلى النطق"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tvQuizPrompt"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="اضغط السماعة أولاً 🔊 ثم اختر الإجابة"
+                    android:textSize="19sp"
+                    android:textStyle="bold"
+                    android:textColor="#37474F"
+                    android:lineSpacingExtra="4dp"
+                    android:gravity="center"
+                    android:textAlignment="center"
+                    android:layout_marginBottom="16dp" />
+
+                <GridLayout
+                    android:id="@+id/gridQuizAnswers"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layoutDirection="ltr"
+                    android:columnCount="2"
+                    android:rowCount="2"
+                    android:alignmentMode="alignMargins"
+                    android:useDefaultMargins="false">
+
+                    <Button
+                        android:id="@+id/btnAnswer0"
+                        android:layout_width="118dp"
+                        android:layout_height="118dp"
+                        android:layout_margin="10dp"
+                        android:textSize="26sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:textAlignment="center"
+                        android:textDirection="ltr"
+                        android:layoutDirection="ltr"
+                        android:includeFontPadding="false" />
+
+                    <Button
+                        android:id="@+id/btnAnswer1"
+                        android:layout_width="118dp"
+                        android:layout_height="118dp"
+                        android:layout_margin="10dp"
+                        android:textSize="26sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:textAlignment="center"
+                        android:textDirection="ltr"
+                        android:layoutDirection="ltr"
+                        android:includeFontPadding="false" />
+
+                    <Button
+                        android:id="@+id/btnAnswer2"
+                        android:layout_width="118dp"
+                        android:layout_height="118dp"
+                        android:layout_margin="10dp"
+                        android:textSize="26sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:textAlignment="center"
+                        android:textDirection="ltr"
+                        android:layoutDirection="ltr"
+                        android:includeFontPadding="false" />
+
+                    <Button
+                        android:id="@+id/btnAnswer3"
+                        android:layout_width="118dp"
+                        android:layout_height="118dp"
+                        android:layout_margin="10dp"
+                        android:textSize="26sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:textAlignment="center"
+                        android:textDirection="ltr"
+                        android:layoutDirection="ltr"
+                        android:includeFontPadding="false" />
+                </GridLayout>
+            </LinearLayout>
+
+            <!-- نتيجة -->
+            <LinearLayout
+                android:id="@+id/panelDone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center_horizontal"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvDoneTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="انتهى الاختبار"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:textColor="#2E7D32"
+                    android:gravity="center"
+                    android:textAlignment="center"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView
+                    android:id="@+id/tvDoneSummary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="15sp"
+                    android:lineSpacingExtra="4dp"
+                    android:gravity="center"
+                    android:textAlignment="center"
+                    android:layout_marginBottom="20dp" />
+
+                <Button
+                    android:id="@+id/btnDoneClose"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="حسناً"
+                    android:textSize="18sp"
+                    android:minHeight="52dp"
+                    android:minWidth="160dp"
+                    android:paddingStart="32dp"
+                    android:paddingEnd="32dp" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <include layout="@layout/bottom_nav_learning" />
+
+</LinearLayout>

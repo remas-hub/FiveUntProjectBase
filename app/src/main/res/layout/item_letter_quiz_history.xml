@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- سطر واحد بقائمة تاريخ الاختبارات -->
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="14dp"
+    app:cardBackgroundColor="#FFFFF8"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    app:contentPadding="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- صف واحد: رقم + تاريخ + تلميح؛ الضغط يفتح التفاصيل -->
+        <LinearLayout
+            android:id="@+id/rowSessionHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:baselineAligned="false"
+            android:minHeight="56dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true">
+
+            <FrameLayout
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:background="@drawable/bg_history_badge">
+
+                <TextView
+                    android:id="@+id/tvSessionBadge"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:textAlignment="center"
+                    android:textColor="#FFFFFF"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:includeFontPadding="false" />
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/tvSessionDate"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:paddingStart="14dp"
+                android:paddingEnd="8dp"
+                android:textColor="#5D4037"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:lineSpacingExtra="2dp" />
+
+            <TextView
+                android:id="@+id/tvExpandHint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="▼"
+                android:textColor="#E65100"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                android:paddingStart="8dp"
+                android:contentDescription="عرض النتائج" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/containerOutcomes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:paddingTop="8dp" />
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

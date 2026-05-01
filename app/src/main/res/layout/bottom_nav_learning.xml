@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- شريط تنقل سفلي مشترك — أيقونات الرئيسية/اختبار/إعدادات/خروج -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/bottomBar"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="70dp"
+    android:orientation="horizontal"
+    android:background="#FFFFFF"
+    android:elevation="8dp"
+    android:gravity="center"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp">
+
+    <LinearLayout
+        android:id="@+id/btnHome"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground">
+
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@android:drawable/ic_menu_view"
+            app:tint="#757575" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="الرئيسية"
+            android:textSize="12sp"
+            android:textColor="#757575" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/btnTests"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground">
+
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@android:drawable/ic_menu_edit"
+            app:tint="#757575" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="اختبارات"
+            android:textSize="12sp"
+            android:textColor="#757575" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/btnSettings"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground">
+
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@android:drawable/ic_menu_preferences"
+            app:tint="#757575" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="الإعدادات"
+            android:textSize="12sp"
+            android:textColor="#757575" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/btnLogout"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground">
+
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            app:tint="#F44336" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="خروج"
+            android:textSize="12sp"
+            android:textColor="#F44336" />
+
+    </LinearLayout>
+
+</LinearLayout>
