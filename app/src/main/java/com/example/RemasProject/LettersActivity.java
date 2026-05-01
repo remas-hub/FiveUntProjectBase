@@ -25,6 +25,7 @@ import android.widget.GridLayout;
 import android.widget.ImageButton;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowInsetsControllerCompat;
 
@@ -75,6 +76,9 @@ public class LettersActivity extends AppCompatActivity {
 
     /** يتجاهل نتائج تحميل قديمة إن استُؤنف النشاط مرات متتابعة. */
     private final AtomicInteger progressLoadGeneration = new AtomicInteger(0);
+
+    /** يمنع إيماءة/زر الرجوع من إغلاق الشاشة أثناء السبوتلايت (متطلب أندرويد 16+ مع التنبؤ بالرجوع). */
+    private OnBackPressedCallback spotlightBackCallback;
 
     private final SharedPreferences.OnSharedPreferenceChangeListener learningSettingsListener =
             (sharedPreferences, key) -> {
@@ -134,6 +138,14 @@ public class LettersActivity extends AppCompatActivity {
         arabicTTS = new ArabicTextToSpeech(this, status -> {
             // جاهز للاستخدام
         });
+
+        spotlightBackCallback = new OnBackPressedCallback(false) {
+            @Override
+            public void handleOnBackPressed() {
+                /* مفعّل فقط أثناء السبوتلايت — استهلاك الحدث دون إنهاء النشاط */
+            }
+        };
+        getOnBackPressedDispatcher().addCallback(this, spotlightBackCallback);
     }
 
     @Override
@@ -250,7 +262,7 @@ public class LettersActivity extends AppCompatActivity {
         
         tvToolbarTitle.setText("تعلم الحروف");
         
-        btnBack.setOnClickListener(v -> onBackPressed());
+        btnBack.setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
     }
     
     private CharSequence formatLetterButtonLabel(String letter) {
@@ -291,20 +303,15 @@ public class LettersActivity extends AppCompatActivity {
         btn.setTextColor(0xFF000000);
     }
 
-    @Override
-    public void onBackPressed() {
-        if (letterSpotlightShowing) {
-            return;
-        }
-        super.onBackPressed();
-    }
-
     /** نافذة معتمة مع عداد تنازلي؛ النطق كل X ثوانٍ حتى انتهاء مدة الظهور؛ لا تفاعل مع بقية الشاشة. */
     private void showLetterSpotlight(String letter, Button btn) {
         if (letterSpotlightShowing || letterSpotlightOverlay == null || tvLetterSpotlight == null) {
             return;
         }
         letterSpotlightShowing = true;
+        if (spotlightBackCallback != null) {
+            spotlightBackCallback.setEnabled(true);
+        }
         currentSpotlightLetter = letter;
         clearSpotlightSpeakRunnables();
         spotlightHandler.removeCallbacks(spotlightDismissRunnable);
@@ -352,6 +359,9 @@ public class LettersActivity extends AppCompatActivity {
 
     private void dismissLetterSpotlight() {
         letterSpotlightShowing = false;
+        if (spotlightBackCallback != null) {
+            spotlightBackCallback.setEnabled(false);
+        }
         clearSpotlightSpeakRunnables();
         spotlightHandler.removeCallbacks(spotlightDismissRunnable);
         spotlightHandler.removeCallbacks(spotlightCountdownTickRunnable);
@@ -606,6 +616,9 @@ public class LettersActivity extends AppCompatActivity {
         spotlightHandler.removeCallbacks(spotlightDismissRunnable);
         spotlightHandler.removeCallbacks(spotlightCountdownTickRunnable);
         letterSpotlightShowing = false;
+        if (spotlightBackCallback != null) {
+            spotlightBackCallback.setEnabled(false);
+        }
         if (arabicTTS != null) {
             arabicTTS.shutdown();
         }
