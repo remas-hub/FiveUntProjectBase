@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- مسارات المشاركة مع FileProvider — كاش داخلي وخارجي للصور المؤقتة -->
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Internal storage directory for temporary files -->
     <cache-path name="temp_images" path="." />

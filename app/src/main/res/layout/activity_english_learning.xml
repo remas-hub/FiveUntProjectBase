@@ -1,20 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- الرئيسية — صورة الطالب، بطاقة إحصائيات، زر الحروف الكبير، والشريط السفلي -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F5F5F5">
+    android:background="#F3F7F4">
 
     <!-- الشريط العلوي -->
     <LinearLayout
         android:id="@+id/topBar"
         android:layout_width="match_parent"
-        android:layout_height="80dp"
+        android:layout_height="wrap_content"
+        android:minHeight="80dp"
         android:orientation="horizontal"
         android:background="#4CAF50"
         android:gravity="center_vertical"
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
+        android:paddingTop="0dp"
+        android:paddingBottom="0dp"
         android:elevation="4dp">
 
         <TextView
@@ -22,8 +27,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="تعلم الإنجليزية"
-            android:textSize="24sp"
+            android:text="تعلم الحروف الإنجليزية"
+            android:textSize="22sp"
             android:textStyle="bold"
             android:textColor="#FFFFFF"
             android:gravity="center_vertical" />
@@ -33,10 +38,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text=""
-            android:textSize="16sp"
+            android:textSize="15sp"
             android:textColor="#FFFFFF"
             android:gravity="center_vertical"
-            android:layout_marginEnd="16dp" />
+            android:layout_marginEnd="12dp"
+            android:padding="6dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackgroundBorderless" />
 
         <ImageView
             android:id="@+id/ivProfile"
@@ -44,201 +53,238 @@
             android:layout_height="40dp"
             android:src="@android:drawable/ic_menu_myplaces"
             android:background="@drawable/profile_circle"
-            android:contentDescription="Profile" />
+            android:scaleType="centerCrop"
+            android:contentDescription="تعديل الملف الشخصي"
+            android:clickable="true"
+            android:focusable="true" />
 
     </LinearLayout>
 
-    <!-- المحتوى الرئيسي -->
     <ScrollView
+        android:id="@+id/scrollMainLearning"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:fillViewport="true">
+        android:fillViewport="true"
+        android:clipToPadding="false"
+        android:overScrollMode="ifContentScrolls">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="24dp"
-            android:gravity="center">
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="20dp"
+            android:paddingBottom="28dp"
+            android:gravity="center_horizontal">
 
             <TextView
                 android:id="@+id/tvWelcome"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="مرحباً!"
-                android:textSize="32sp"
+                android:textSize="26sp"
                 android:textStyle="bold"
                 android:textColor="#2E7D32"
-                android:layout_marginBottom="16dp" />
+                android:gravity="center"
+                android:layout_marginBottom="6dp"
+                android:letterSpacing="0.01" />
 
             <TextView
-                android:id="@+id/tvProgress"
-                android:layout_width="wrap_content"
+                android:id="@+id/tvHomeSubtitle"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="التقدم: 0%"
-                android:textSize="18sp"
-                android:textColor="#757575"
-                android:layout_marginBottom="48dp"
-                android:background="@drawable/progress_background"
-                android:padding="16dp" />
+                android:text="ابدأ من هنا — الحروف خطوة مرتاحة وواضحة."
+                android:textSize="15sp"
+                android:textColor="#607D8B"
+                android:gravity="center"
+                android:lineSpacingExtra="3dp"
+                android:layout_marginBottom="20dp" />
 
-            <Button
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_home_stats_card"
+                android:padding="18dp"
+                android:layout_marginBottom="28dp"
+                android:elevation="2dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="حروفك في هذه المرحلة"
+                    android:textSize="13sp"
+                    android:textColor="#78909C"
+                    android:layout_marginBottom="14dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="عدد الحروف المطلوب تعلّمها"
+                        android:textSize="15sp"
+                        android:textColor="#455A64"
+                        android:lineSpacingExtra="2dp" />
+
+                    <TextView
+                        android:id="@+id/tvStatLettersRequired"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="—"
+                        android:textSize="17sp"
+                        android:textStyle="bold"
+                        android:textColor="#1B5E20"
+                        android:minWidth="36dp"
+                        android:gravity="center" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#ECEFF1"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="4dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="اختبارات الحروف التي أنجزتها"
+                        android:textSize="15sp"
+                        android:textColor="#455A64"
+                        android:lineSpacingExtra="2dp" />
+
+                    <TextView
+                        android:id="@+id/tvStatQuizSessions"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="—"
+                        android:textSize="17sp"
+                        android:textStyle="bold"
+                        android:textColor="#1565C0"
+                        android:minWidth="36dp"
+                        android:gravity="center" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#ECEFF1"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="4dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="حروف أتممت اختبارها بنجاح"
+                        android:textSize="15sp"
+                        android:textColor="#455A64"
+                        android:lineSpacingExtra="2dp" />
+
+                    <TextView
+                        android:id="@+id/tvStatLettersPassed"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="—"
+                        android:textSize="17sp"
+                        android:textStyle="bold"
+                        android:textColor="#6A1B9A"
+                        android:minWidth="36dp"
+                        android:gravity="center" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#ECEFF1"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="4dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="المتبقي على خطتك"
+                        android:textSize="15sp"
+                        android:textColor="#455A64"
+                        android:lineSpacingExtra="2dp" />
+
+                    <TextView
+                        android:id="@+id/tvStatLettersRemaining"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="—"
+                        android:textSize="17sp"
+                        android:textStyle="bold"
+                        android:textColor="#E65100"
+                        android:minWidth="36dp"
+                        android:gravity="center" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btnLetters"
-                android:layout_width="match_parent"
-                android:layout_height="120dp"
-                android:text="تعلم الحروف 📚"
-                android:textSize="24sp"
+                android:layout_width="228dp"
+                android:layout_height="228dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:background="@drawable/bg_home_letters_circle_ripple"
+                android:text="تعلم الحروف"
+                android:textAllCaps="false"
+                android:textSize="21sp"
                 android:textStyle="bold"
                 android:textColor="#FFFFFF"
-                android:background="#FF6B6B"
-                android:layout_marginBottom="24dp"
-                android:elevation="8dp" />
-
-            <Button
-                android:id="@+id/btnWords"
-                android:layout_width="match_parent"
-                android:layout_height="120dp"
-                android:text="تعلم الكلمات 🎯"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:textColor="#FFFFFF"
-                android:background="#4ECDC4"
-                android:layout_marginBottom="24dp"
-                android:elevation="8dp" />
-
-            <Button
-                android:id="@+id/btnPractice"
-                android:layout_width="match_parent"
-                android:layout_height="120dp"
-                android:text="لعبة الممارسة 🎮"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:textColor="#FFFFFF"
-                android:background="#FFD93D"
-                android:layout_marginBottom="24dp"
-                android:elevation="8dp" />
+                android:gravity="center"
+                android:textAlignment="center"
+                android:includeFontPadding="false"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:paddingTop="24dp"
+                android:paddingBottom="24dp"
+                android:letterSpacing="0.02"
+                android:stateListAnimator="@null"
+                android:elevation="6dp"
+                app:backgroundTint="@null" />
 
         </LinearLayout>
 
     </ScrollView>
 
-    <!-- الشريط السفلي -->
-    <LinearLayout
-        android:id="@+id/bottomBar"
-        android:layout_width="match_parent"
-        android:layout_height="70dp"
-        android:orientation="horizontal"
-        android:background="#FFFFFF"
-        android:elevation="8dp"
-        android:gravity="center"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp">
-
-        <LinearLayout
-            android:id="@+id/btnHome"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackground">
-
-            <ImageView
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:src="@android:drawable/ic_menu_view"
-                android:tint="#4CAF50" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="الرئيسية"
-                android:textSize="12sp"
-                android:textColor="#4CAF50" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/btnProgress"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackground">
-
-            <ImageView
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:src="@android:drawable/ic_menu_recent_history"
-                android:tint="#757575" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="التقدم"
-                android:textSize="12sp"
-                android:textColor="#757575" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/btnSettings"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackground">
-
-            <ImageView
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:src="@android:drawable/ic_menu_preferences"
-                android:tint="#757575" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="الإعدادات"
-                android:textSize="12sp"
-                android:textColor="#757575" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/btnLogout"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackground">
-
-            <ImageView
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:src="@android:drawable/ic_menu_close_clear_cancel"
-                android:tint="#F44336" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="خروج"
-                android:textSize="12sp"
-                android:textColor="#F44336" />
-
-        </LinearLayout>
-
-    </LinearLayout>
+    <include layout="@layout/bottom_nav_learning" />
 
 </LinearLayout>

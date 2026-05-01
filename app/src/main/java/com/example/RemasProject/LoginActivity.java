@@ -1,3 +1,6 @@
+/**
+ * هون بتسجّل دخول أو تنشئ حساب جديد، تختار صورة للبروفايل، والكل متصل بـ Appwrite (جدول الطلاب والتخزين).
+ */
 package com.example.RemasProject;
 
 import android.animation.Animator;
@@ -25,9 +28,13 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.bumptech.glide.Glide;
+import com.example.RemasProject.Hellper.UiInsetsHelper;
 import com.example.RemasProject.Hellper.DALAppWriteConnection;
+import com.example.RemasProject.Hellper.LearningSettingsPrefs;
 import com.example.RemasProject.model.Student;
 
 import java.io.ByteArrayOutputStream;
@@ -56,8 +63,17 @@ public class LoginActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-        
-        // التحقق من تسجيل الدخول السابق
+
+        UiInsetsHelper.enableEdgeToEdge(this);
+        View root = findViewById(android.R.id.content);
+        if (root instanceof android.view.ViewGroup && ((android.view.ViewGroup) root).getChildCount() > 0) {
+            View contentRoot = ((android.view.ViewGroup) root).getChildAt(0);
+            UiInsetsHelper.applySafePadding(contentRoot);
+        }
+        getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.login_status_bar));
+        new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView()).setAppearanceLightStatusBars(true);
+
+        // لو الطالب سبق وسجّل دخول على نفس الجهاز، studentId محفوظ — ما نعرض نموذج الدخول مرة ثانية
         prefs = getSharedPreferences("EnglishLearning", MODE_PRIVATE);
         String savedStudentId = prefs.getString("studentId", null);
         if (savedStudentId != null) {
@@ -185,19 +201,17 @@ public class LoginActivity extends AppCompatActivity {
                     dal.uploadFile(imageBytes, fileName, "image/jpeg", null);
                 
                 runOnUiThread(() -> {
-                    if (result.success) {
+                    if (result.success && result.data != null) {
                         selectedImageUrl = result.data.fileUrl;
-                        
-                        // عرض الصورة
-                        Glide.with(this)
-                            .load(selectedImageUrl)
-                            .circleCrop()
-                            .into(ivProfilePicture);
-                        
+                        Glide.with(LoginActivity.this)
+                                .load(bitmap)
+                                .circleCrop()
+                                .into(ivProfilePicture);
                         ivProfilePicture.setVisibility(View.VISIBLE);
                         showToast("تم رفع الصورة بنجاح!");
                     } else {
-                        showToast("فشل رفع الصورة: " + result.message);
+                        showToast("فشل رفع الصورة: "
+                                + (result.message != null ? result.message : ""));
                     }
                 });
             } catch (Exception e) {
@@ -249,6 +263,7 @@ public class LoginActivity extends AppCompatActivity {
             try {
                 android.util.Log.d("LOGIN", "بدء تسجيل الدخول للبريد: " + email);
                 
+                // ما في استعلام بالإيميل فقط من الـ API الجاهز؛ منجيب كل الطلاب ونطابق محلياً (مناسب لحجم بيانات صغير)
                 // البحث عن الطالب في قاعدة البيانات
                 DALAppWriteConnection.OperationResult<ArrayList<Student>> result = 
                     dal.getData("students", null, Student.class);
@@ -347,6 +362,7 @@ public class LoginActivity extends AppCompatActivity {
         
         new Thread(() -> {
             try {
+                // نفس أسلوب الدخول: جلب القائمة ثم التحقق من عدم تكرار الإيميل قبل الإنشاء
                 // التحقق من وجود البريد الإلكتروني
                 DALAppWriteConnection.OperationResult<ArrayList<Student>> checkResult = 
                     dal.getData("students", null, Student.class);
@@ -365,8 +381,9 @@ public class LoginActivity extends AppCompatActivity {
                 
                 // إنشاء طالب جديد
                 Student newStudent = new Student(name, email, password);
-                if (!selectedImageUrl.isEmpty()) {
-                    newStudent.setProfileImageUrl(selectedImageUrl);
+                newStudent.setProfileImageUrl(selectedImageUrl.isEmpty() ? "" : selectedImageUrl);
+                if (LearningSettingsPrefs.isAdminTeacherEmail(email)) {
+                    newStudent.setIsTeacher(true);
                 }
                 
                 DALAppWriteConnection.OperationResult<ArrayList<Student>> saveResult = 
@@ -401,6 +418,7 @@ public class LoginActivity extends AppCompatActivity {
     }
     
     private void createStudentProgress(Student student) {
+        // مستند تقدم فارغ يُربط بمعرف الطالب؛ باقي الشاشات تتحدث عليه لاحقاً
         new Thread(() -> {
             try {
                 com.example.RemasProject.model.StudentProgress progress = 
@@ -415,10 +433,14 @@ public class LoginActivity extends AppCompatActivity {
     
     private void saveLoginInfo(Student student) {
         try {
+            // القيم دي بتقرأها EnglishLearningActivity والـ DAL عبر نفس اسم ملف الـ prefs
             SharedPreferences.Editor editor = prefs.edit();
             editor.putString("studentId", student.getId());
             editor.putString("studentName", student.getName());
             editor.putString("studentEmail", student.getEmail());
+            boolean teacherAccess = LearningSettingsPrefs.effectiveIsTeacher(
+                    student.isTeacher(), student.getEmail());
+            editor.putBoolean(LearningSettingsPrefs.KEY_IS_TEACHER, teacherAccess);
             if (student.getProfileImageUrl() != null) {
                 editor.putString("studentProfileImage", student.getProfileImageUrl());
             }
@@ -440,6 +462,7 @@ public class LoginActivity extends AppCompatActivity {
             android.util.Log.d("LOGIN", "savedId من SharedPreferences: " + savedId);
             
             Intent intent = new Intent(LoginActivity.this, EnglishLearningActivity.class);
+            // يمسح رجوع المستخدم لشاشات الدخول القديمة من زر الرجوع في النظام
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
             

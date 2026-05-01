@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ملف المنيفست — الصلاحيات (نت، كاميرا، تخزين)، وتسجيل كل الشاشات وبداية التطبيق من السبلاش -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <!-- Appwrite requires internet permission -->
@@ -29,7 +30,7 @@
             android:name=".SplashActivity"
             android:exported="true"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+            android:theme="@style/Theme.RemasProject">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -38,12 +39,6 @@
             </intent-filter>
 
         </activity>
-        
-        <activity
-            android:name=".TrialActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
         
         <activity
             android:name=".LoginActivity"
@@ -63,13 +58,19 @@
             android:parentActivityName=".EnglishLearningActivity" />
         
         <activity
-            android:name=".WordsActivity"
+            android:name=".LetterTestActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:parentActivityName=".EnglishLearningActivity" />
         
         <activity
-            android:name=".PracticeActivity"
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:parentActivityName=".EnglishLearningActivity" />
+
+        <activity
+            android:name=".EditStudentProfileActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:parentActivityName=".EnglishLearningActivity" />

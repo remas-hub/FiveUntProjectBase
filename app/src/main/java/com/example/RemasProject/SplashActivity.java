@@ -1,7 +1,8 @@
+/**
+ * هاد أول ما يفتح التطبيق — شاشة ترحيبية خفيفة؛ إذا في طالب محفوظ بننتقل للرئيسية، وإلا لشاشة الدخول/التسجيل.
+ */
 package com.example.RemasProject;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Intent;
@@ -9,6 +10,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.BounceInterpolator;
 import android.view.animation.DecelerateInterpolator;
@@ -17,16 +19,24 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.RemasProject.Hellper.UiInsetsHelper;
+
 public class SplashActivity extends AppCompatActivity {
     
     private ImageView ivLogo;
     private TextView tvTitle, tvSubtitle;
-    private View viewBackground;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
+
+        // المحتوى يطلع من تحت شريط الحالة؛ الحشوة على الجذر حتى ما يختفي اللوقو تحت النوتش
+        UiInsetsHelper.enableEdgeToEdge(this);
+        View content = findViewById(android.R.id.content);
+        if (content instanceof ViewGroup && ((ViewGroup) content).getChildCount() > 0) {
+            UiInsetsHelper.applySafePadding(((ViewGroup) content).getChildAt(0));
+        }
         
         initializeViews();
         startAnimations();
@@ -36,8 +46,7 @@ public class SplashActivity extends AppCompatActivity {
         ivLogo = findViewById(R.id.ivLogo);
         tvTitle = findViewById(R.id.tvTitle);
         tvSubtitle = findViewById(R.id.tvSubtitle);
-        viewBackground = findViewById(R.id.viewBackground);
-        
+
         // إخفاء العناصر في البداية
         ivLogo.setAlpha(0f);
         tvTitle.setAlpha(0f);
@@ -45,9 +54,7 @@ public class SplashActivity extends AppCompatActivity {
     }
     
     private void startAnimations() {
-        // أنيميشن الخلفية
-        animateBackground();
-        
+        // تتابع بصري: شعار → عنوان → فرعي، وبعد ~3 ثواني نقرر وجهة التطبيق
         // أنيميشن الشعار
         new Handler().postDelayed(() -> animateLogo(), 300);
         
@@ -59,18 +66,6 @@ public class SplashActivity extends AppCompatActivity {
         
         // الانتقال للشاشة التالية
         new Handler().postDelayed(() -> navigateToNext(), 3000);
-    }
-    
-    private void animateBackground() {
-        // تأثير تدرج لوني متحرك
-        ValueAnimator colorAnimator = ValueAnimator.ofFloat(0f, 1f);
-        colorAnimator.setDuration(2000);
-        colorAnimator.setInterpolator(new AccelerateDecelerateInterpolator());
-        colorAnimator.addUpdateListener(animation -> {
-            float progress = animation.getAnimatedFraction();
-            // يمكن إضافة تغيير لون الخلفية هنا
-        });
-        colorAnimator.start();
     }
     
     private void animateLogo() {
@@ -146,23 +141,17 @@ public class SplashActivity extends AppCompatActivity {
     }
     
     private void navigateToNext() {
-        // التحقق من تسجيل الدخول
+        // نفس اسم الـ prefs اللي بيحفظه LoginActivity بعد الدخول الناجح
         SharedPreferences prefs = getSharedPreferences("EnglishLearning", MODE_PRIVATE);
         String studentId = prefs.getString("studentId", null);
-        boolean hasSeenTrial = prefs.getBoolean("hasSeenTrial", false);
-        
+
         Intent intent;
-        if (studentId != null) {
-            // الانتقال للشاشة الرئيسية
+        if (studentId != null && !studentId.trim().isEmpty()) {
             intent = new Intent(SplashActivity.this, EnglishLearningActivity.class);
-        } else if (!hasSeenTrial) {
-            // الانتقال لصفحة التجربة أولاً
-            intent = new Intent(SplashActivity.this, TrialActivity.class);
         } else {
-            // الانتقال لصفحة تسجيل الدخول
             intent = new Intent(SplashActivity.this, LoginActivity.class);
         }
-        
+
         startActivity(intent);
         finish();
     }

@@ -1,30 +1,33 @@
+/**
+ * هاد الملف كل الشغل الثقيل مع Appwrite — جداول، مستندات، رفع صور، تنزيل بروابط؛ الباقي الشاشات بتستدعي دوال جاهزة من هون.
+ */
 package com.example.RemasProject.Hellper;
 
 import android.content.Context;
+import android.util.Log;
 
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 
-/**
- * طبقة الوصول إلى البيانات - طبقة وسيطة عامة للتطبيق مع Appwrite
- * 
- * هذا الكلاس يوفر واجهة موحدة وسهلة لإدارة:
- * - قواعد البيانات والمستندات
- * - المستخدمين والمصادقة  
- * - الملفات والتخزين
- * 
- * يمكن لأي مطور استخدام هذا الكلاس لإدارة البيانات بسهولة
- */
+import com.example.RemasProject.model.LetterListenRecord;
+import com.example.RemasProject.model.LetterQuizSession;
+import com.example.RemasProject.model.StudentProgress;
+
 public class DALAppWriteConnection {
     
-    private static final String TAG = "DALAppWriteConnection";
+    /** للوجات القصيرة في Logcat */
+    private static final String LOG_TAG = "RemasDB";
     
     // === إعدادات الاتصال مع Appwrite ===
     private static final String BASE_URL = "https://fra.cloud.appwrite.io/v1";
@@ -32,12 +35,6 @@ public class DALAppWriteConnection {
     private static final String API_KEY = "standard_537269c91e4dae90604cab81befa943c70ee375a7b0f4cfc424f83f15a264cf9ceefe2d8b7f00588daddb40808636b93254e052dabfc6d820d28e9d35b8397770a62aabd805c83a2ef2ce312d1db2f58eb66cdad160af6d1dfa2500ce4afc827cd481224b48213cb5d387c3c7529af2a3f39792fd4f3e02396b18a5b31a23f21";
     private static final String MAIN_DATABASE_ID = "690c672100204fe70734"; // AppDb
     private static final String MAIN_STORAGE_BUCKET_ID = "690c67460024eed73cc2"; // AppWriteStorage
-    private static final String USER_FILES_BUCKET_ID = "69056d1b001eba1f06eb"; // يمكن تغييره لاحقاً
-    
-    // === متغيرات حالة الجلسة ===
-    private String currentUserId = null;
-    private String currentUserEmail = null;
-    private String sessionId = null;
     
     private Context context;
     private Gson gson;
@@ -52,55 +49,7 @@ public class DALAppWriteConnection {
         
     }
     
-    /**
-     * اختبار الاتصال مع Appwrite
-     * @return true إذا كان الاتصال ناجح، false إذا فشل
-     */
-    public boolean testConnection() {
-        try {
-            URL url = new URL(BASE_URL + "/health");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-            connection.setConnectTimeout(5000);
-            connection.setReadTimeout(5000);
-            
-            int responseCode = connection.getResponseCode();
-            connection.disconnect();
-            
-            return responseCode == HttpURLConnection.HTTP_OK || responseCode == 401;
-            
-        } catch (Exception e) {
-            return false;
-        }
-    }
-    
     // === نماذج البيانات الأساسية ===
-    
-    /**
-     * نموذج بيانات المستخدم
-     */
-    public static class UserData {
-        public String userId;
-        public String email;
-        public String firstName;
-        public String lastName;
-        public String phone;
-        public String profileImageUrl;
-        public java.util.Date createdAt;
-        public java.util.Date lastLoginAt;
-        public boolean isActive;
-        
-        public UserData() {}
-        
-        public UserData(String userId, String email, String firstName, String lastName) {
-            this.userId = userId;
-            this.email = email;
-            this.firstName = firstName;
-            this.lastName = lastName;
-            this.createdAt = new java.util.Date();
-            this.isActive = true;
-        }
-    }
     
     /**
      * نموذج نتيجة العملية
@@ -139,451 +88,6 @@ public class DALAppWriteConnection {
         public String bucketId;
         
         public FileInfo() {}
-    }
-    
-    // === دوال إدارة المستخدمين ===
-    
-    /**
-     * إنشاء مستخدم افتراضي جديد في النظام
-     * @param email البريد الإلكتروني للمستخدم
-     * @param password كلمة المرور
-     * @param firstName الاسم الأول
-     * @param lastName الاسم الأخير
-     * @param phone رقم الهاتف (اختياري)
-     * @return نتيجة العملية مع بيانات المستخدم
-     * 
-     * مثال على الاستخدام:
-     * UserData user = new UserData();
-     * user.email = "test@example.com";
-     * user.firstName = "أحمد";
-     * user.lastName = "محمد";
-     * 
-     * OperationResult<UserData> result = dal.createDefaultUser(user.email, "password123", 
-     *                                                          user.firstName, user.lastName, "0123456789");
-     * 
-     * if (result.success) {
-     *     Log.d("SUCCESS", "تم إنشاء المستخدم: " + result.data.userId);
-     * } else {
-     *     Log.e("ERROR", "فشل في إنشاء المستخدم: " + result.message);
-     * }
-     */
-    public OperationResult<UserData> createDefaultUser(String email, String password, 
-                                                      String firstName, String lastName, String phone) {
-        try {
-            // إنشاء معرف فريد للمستخدم
-            String userId = UUID.randomUUID().toString();
-            
-            // إعداد بيانات المستخدم
-            Map<String, Object> userData = new HashMap<>();
-            userData.put("userId", userId);
-            userData.put("email", email);
-            userData.put("firstName", firstName);
-            userData.put("lastName", lastName);
-            userData.put("phone", phone != null ? phone : "");
-            userData.put("createdAt", new Date().toString());
-            userData.put("isActive", true);
-            
-            // إنشاء المستخدم في Appwrite
-            URL url = new URL(BASE_URL + "/account");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setRequestProperty("X-Appwrite-Project", PROJECT_ID);
-            connection.setRequestProperty("X-Appwrite-Key", API_KEY);
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(10000);
-            connection.setDoOutput(true);
-            
-            // إرسال بيانات المستخدم
-            String jsonBody = String.format(
-                "{\"userId\":\"%s\", \"email\":\"%s\", \"password\":\"%s\", \"name\":\"%s %s\"}",
-                userId, email, password, firstName, lastName
-            );
-            
-            try (OutputStream os = connection.getOutputStream()) {
-                os.write(jsonBody.getBytes());
-            }
-            
-            int responseCode = connection.getResponseCode();
-            
-            if (responseCode == 201 || responseCode == 200) {
-                // إنشاء جدول خاص بالمستخدم
-                createUserTable(userId);
-                
-                // إنشاء مستخدم في قاعدة البيانات المحلية
-                UserData user = new UserData(userId, email, firstName, lastName);
-                user.phone = phone;
-                user.createdAt = new Date();
-                
-                
-                return new OperationResult<>(true, "تم إنشاء المستخدم بنجاح", user);
-            } else {
-                String errorMessage = readErrorResponse(connection);
-                return new OperationResult<>(false, "فشل في إنشاء المستخدم: " + errorMessage);
-            }
-            
-        } catch (Exception e) {
-            return new OperationResult<>(false, "خطأ في إنشاء المستخدم: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * تسجيل الدخول للمستخدم الموجود
-     * @param email البريد الإلكتروني
-     * @param password كلمة المرور
-     * @return نتيجة العملية مع بيانات المستخدم
-     * 
-     * مثال على الاستخدام:
-     * OperationResult<UserData> result = dal.loginUser("user@example.com", "password123");
-     * 
-     * if (result.success) {
-     *     Log.d("SUCCESS", "تم تسجيل الدخول بنجاح");
-     *     Log.d("USER", "معرف المستخدم: " + result.data.userId);
-     *     Log.d("EMAIL", "البريد الإلكتروني: " + result.data.email);
-     * } else {
-     *     Log.e("ERROR", "فشل تسجيل الدخول: " + result.message);
-     * }
-     */
-    public OperationResult<UserData> loginUser(String email, String password) {
-        try {
-            URL url = new URL(BASE_URL + "/account/sessions");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setRequestProperty("X-Appwrite-Project", PROJECT_ID);
-            connection.setRequestProperty("X-Appwrite-Key", API_KEY);
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(10000);
-            connection.setDoOutput(true);
-            
-            // إرسال بيانات تسجيل الدخول
-            String jsonBody = String.format("{\"email\":\"%s\", \"password\":\"%s\"}", email, password);
-            
-            try (OutputStream os = connection.getOutputStream()) {
-                os.write(jsonBody.getBytes());
-            }
-            
-            int responseCode = connection.getResponseCode();
-            
-            if (responseCode == 200 || responseCode == 201) {
-                // قراءة الاستجابة
-                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    response.append(line);
-                }
-                reader.close();
-                
-                // استخراج معرف الجلسة
-                String responseString = response.toString();
-                String sessionId = extractValue(responseString, "userId");
-                
-                if (sessionId != null && !sessionId.isEmpty()) {
-                    // حفظ بيانات الجلسة
-                    this.currentUserId = sessionId;
-                    this.currentUserEmail = email;
-                    this.sessionId = sessionId;
-                    
-                    // إنشاء بيانات المستخدم
-                    UserData user = new UserData(sessionId, email, "", "");
-                    
-                    return new OperationResult<>(true, "تم تسجيل الدخول بنجاح", user);
-                } else {
-                    return new OperationResult<>(false, "لم يتم العثور على بيانات المستخدم في الاستجابة");
-                }
-            } else {
-                String errorMessage = readErrorResponse(connection);
-                return new OperationResult<>(false, "فشل تسجيل الدخول: " + errorMessage);
-            }
-            
-        } catch (Exception e) {
-            return new OperationResult<>(false, "خطأ في تسجيل الدخول: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * فحص حالة تسجيل الدخول للمستخدم الحالي
-     * @return true إذا كان المستخدم مسجل الدخول، false إذا لم يكن كذلك
-     * 
-     * مثال على الاستخدام:
-     * if (dal.isUserLoggedIn()) {
-     *     Log.d("STATUS", "المستخدم مسجل الدخول");
-     *     Log.d("USER_ID", "معرف المستخدم: " + dal.getCurrentUserId());
-     *     Log.d("EMAIL", "البريد الإلكتروني: " + dal.getCurrentUserEmail());
-     * } else {
-     *     Log.d("STATUS", "المستخدم غير مسجل الدخول");
-     * }
-     */
-    public boolean isUserLoggedIn() {
-        boolean isLoggedIn = currentUserId != null && !currentUserId.isEmpty();
-        
-        if (isLoggedIn) {
-        } else {
-        }
-        
-        return isLoggedIn;
-    }
-    
-    /**
-     * تسجيل خروج المستخدم الحالي
-     * @return نتيجة العملية
-     * 
-     * مثال على الاستخدام:
-     * OperationResult<Void> result = dal.logoutUser();
-     * 
-     * if (result.success) {
-     *     Log.d("SUCCESS", "تم تسجيل الخروج بنجاح");
-     *     // يمكن الآن توجيه المستخدم لصفحة تسجيل الدخول
-     * } else {
-     *     Log.e("ERROR", "فشل تسجيل الخروج: " + result.message);
-     * }
-     */
-    public OperationResult<Void> logoutUser() {
-        try {
-            URL url = new URL(BASE_URL + "/account/sessions/current");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("DELETE");
-            connection.setRequestProperty("X-Appwrite-Project", PROJECT_ID);
-            connection.setRequestProperty("X-Appwrite-Key", API_KEY);
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(10000);
-            
-            int responseCode = connection.getResponseCode();
-            
-            // مسح بيانات الجلسة محلياً
-            this.currentUserId = null;
-            this.currentUserEmail = null;
-            this.sessionId = null;
-            
-            if (responseCode == 200 || responseCode == 204) {
-                return new OperationResult<>(true, "تم تسجيل الخروج بنجاح");
-            } else {
-                return new OperationResult<>(false, "فشل تسجيل الخروج");
-            }
-            
-        } catch (Exception e) {
-            return new OperationResult<>(false, "خطأ في تسجيل الخروج: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * حذف المستخدم الحالي من النظام
-     * @param userId معرف المستخدم المراد حذفه
-     * @return نتيجة العملية
-     * 
-     * تحذير: هذه العملية نهائية ولا يمكن التراجع عنها
-     * 
-     * مثال على الاستخدام:
-     * OperationResult<Void> result = dal.deleteUser("user-uuid-here");
-     * 
-     * if (result.success) {
-     *     Log.d("SUCCESS", "تم حذف المستخدم بنجاح");
-     * } else {
-     *     Log.e("ERROR", "فشل حذف المستخدم: " + result.message);
-     * }
-     */
-    public OperationResult<Void> deleteUser(String userId) {
-        try {
-            // حذف المستخدم من Appwrite
-            URL url = new URL(BASE_URL + "/account");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("DELETE");
-            connection.setRequestProperty("X-Appwrite-Project", PROJECT_ID);
-            connection.setRequestProperty("X-Appwrite-Key", API_KEY);
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(10000);
-            
-            int responseCode = connection.getResponseCode();
-            
-            // حذف جدول المستخدم
-            deleteUserTable(userId);
-            
-            // مسح بيانات الجلسة إذا كان المستخدم الحالي
-            if (currentUserId != null && currentUserId.equals(userId)) {
-                this.currentUserId = null;
-                this.currentUserEmail = null;
-                this.sessionId = null;
-            }
-            
-            if (responseCode == 200 || responseCode == 204) {
-                return new OperationResult<>(true, "تم حذف المستخدم بنجاح");
-            } else {
-                String errorMessage = readErrorResponse(connection);
-                return new OperationResult<>(false, "فشل حذف المستخدم: " + errorMessage);
-            }
-            
-        } catch (Exception e) {
-            return new OperationResult<>(false, "خطأ في حذف المستخدم: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * إنشاء مستخدم جديد مع جدول مخصص له
-     * @param userModel نموذج المستخدم (يجب أن يحتوي على userId، email، وبيانات إضافية)
-     * @param password كلمة المرور
-     * @param tableName اسم الجدول الخاص بالمستخدم
-     * @return نتيجة العملية مع بيانات المستخدم المحدثة
-     * 
-     * مثال على الاستخدام:
-     * UserData user = new UserData();
-     * user.email = "newuser@example.com";
-     * user.firstName = "سارة";
-     * user.lastName = "أحمد";
-     * user.userId = "custom-user-id";
-     * 
-     * OperationResult<UserData> result = dal.registerNewUser(user, "securepassword", "user_posts");
-     * 
-     * if (result.success) {
-     *     Log.d("SUCCESS", "تم تسجيل المستخدم الجديد");
-     *     Log.d("TABLE", "تم إنشاء جدول: " + "user_posts");
-     * }
-     */
-    public OperationResult<UserData> registerNewUser(UserData userModel, String password, String tableName) {
-        try {
-            if (userModel.userId == null || userModel.userId.isEmpty()) {
-                userModel.userId = UUID.randomUUID().toString();
-            }
-            
-            // إنشاء المستخدم في Appwrite
-            OperationResult<UserData> userResult = createDefaultUser(
-                userModel.email, password, userModel.firstName, userModel.lastName, userModel.phone
-            );
-            
-            if (!userResult.success) {
-                return userResult;
-            }
-            
-            // إنشاء جدول مخصص للمستخدم
-            boolean tableCreated = createUserTable(userModel.userId, tableName);
-            
-            if (tableCreated) {
-                userModel.createdAt = new Date();
-                userModel.isActive = true;
-                
-                return new OperationResult<>(true, "تم تسجيل المستخدم الجديد بنجاح", userModel);
-            } else {
-                return new OperationResult<>(false, "تم إنشاء المستخدم لكن فشل في إنشاء الجدول المخصص");
-            }
-            
-        } catch (Exception e) {
-            return new OperationResult<>(false, "خطأ في تسجيل المستخدم الجديد: " + e.getMessage());
-        }
-    }
-    
-    // === دوال مساعدة للمستخدمين ===
-    
-    /**
-     * الحصول على معرف المستخدم الحالي
-     * @return معرف المستخدم أو null إذا لم يكن مسجل الدخول
-     */
-    public String getCurrentUserId() {
-        return currentUserId;
-    }
-    
-    /**
-     * الحصول على البريد الإلكتروني للمستخدم الحالي
-     * @return البريد الإلكتروني أو null إذا لم يكن مسجل الدخول
-     */
-    public String getCurrentUserEmail() {
-        return currentUserEmail;
-    }
-    
-    /**
-     * إنشاء جدول خاص بالمستخدم
-     * @param userId معرف المستخدم
-     * @return true إذا تم الإنشاء بنجاح، false إذا فشل
-     */
-    private boolean createUserTable(String userId) {
-        return createUserTable(userId, "user_" + userId.replaceAll("-", "_") + "_data");
-    }
-    
-    /**
-     * إنشاء جدول مخصص للمستخدم
-     * @param userId معرف المستخدم
-     * @param tableName اسم الجدول
-     * @return true إذا تم الإنشاء بنجاح، false إذا فشل
-     */
-    private boolean createUserTable(String userId, String tableName) {
-        try {
-            URL url = new URL(BASE_URL + "/databases/" + MAIN_DATABASE_ID + "/collections");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setRequestProperty("X-Appwrite-Project", PROJECT_ID);
-            connection.setRequestProperty("X-Appwrite-Key", API_KEY);
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(10000);
-            connection.setDoOutput(true);
-            
-            // إعداد بيانات الجدول (Collection) بشكل صحيح لـ Appwrite
-            Map<String, Object> collectionData = new HashMap<>();
-            collectionData.put("collectionId", UUID.randomUUID().toString());
-            collectionData.put("name", "جدول بيانات " + userId);
-            collectionData.put("createdFrom", "DALAppWriteConnection");
-            collectionData.put("userId", userId);
-            
-            String jsonBody = gson.toJson(collectionData);
-            
-            try (OutputStream os = connection.getOutputStream()) {
-                os.write(jsonBody.getBytes());
-            }
-            
-            int responseCode = connection.getResponseCode();
-            connection.disconnect();
-            
-            if (responseCode == 201 || responseCode == 200) {
-                
-                // تعطيل permissions مؤقتاً - TODO: إصلاح API endpoints
-                /*
-                // إضافة Document permissions للجدول الجديد
-                addDocumentPermissions(userId, tableName);
-                */
-                
-                // تعطيل schema attributes مؤقتاً - TODO: إصلاح API endpoints
-                /*
-                // تفعيل إنشاء schema attributes إذا تم توفيرها
-                if (tableName.toLowerCase().contains("clothes")) {
-                    createDefaultClothesSchema(userId, tableName);
-                }
-                */
-                
-                return true;
-            } else {
-                // قراءة رسالة الخطأ
-                String errorResponse = readErrorResponse(connection);
-                return false;
-            }
-            
-        } catch (Exception e) {
-            return false;
-        }
-    }
-    
-    /**
-     * حذف جدول المستخدم
-     * @param userId معرف المستخدم
-     */
-    private void deleteUserTable(String userId) {
-        try {
-            String tableName = "user_" + userId.replaceAll("-", "_") + "_data";
-            
-            URL url = new URL(BASE_URL + "/databases/" + MAIN_DATABASE_ID + "/collections/" + tableName);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("DELETE");
-            connection.setRequestProperty("X-Appwrite-Project", PROJECT_ID);
-            connection.setRequestProperty("X-Appwrite-Key", API_KEY);
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(10000);
-            
-            int responseCode = connection.getResponseCode();
-            connection.disconnect();
-            
-            if (responseCode == 200 || responseCode == 204) {
-            }
-            
-        } catch (Exception e) {
-        }
     }
     
     /**
@@ -665,6 +169,7 @@ public class DALAppWriteConnection {
      */
     public <T> OperationResult<ArrayList<T>> saveData(T data, String tableName, String collectionId) {
         try {
+            // مسار عام: تحويل المدخل لقائمة → التأكد من وجود collection في Appwrite (أو إنشاؤه بـ schema مُستنتج) → POST مستند لكل عنصر
             // التحقق من صحة البيانات
             if (data == null) {
                 return new OperationResult<>(false, "البيانات المراد حفظها لا يمكن أن تكون فارغة");
@@ -734,7 +239,8 @@ public class DALAppWriteConnection {
                 try {
                     // إنشاء مستند جديد أو تحديث موجود
                     String documentId = getObjectId(item);
-                    if (documentId == null || documentId.isEmpty()) {
+                    final boolean hadPersistedId = documentId != null && !documentId.isEmpty();
+                    if (!hadPersistedId) {
                         documentId = UUID.randomUUID().toString();
                     }
                     
@@ -755,11 +261,25 @@ public class DALAppWriteConnection {
                         documentData.put(newIdKey, documentData.get("id"));
                         documentData.remove("id");
                     }
+
+                    if (item instanceof StudentProgress) {
+                        encodeStudentProgressMapsForWrite(documentData, (StudentProgress) item);
+                        // مخطط Appwrite يتطلّب غالباً studentprogressId؛ عند مستند جديد لا يوجد id في الـ Map فيُستبدل هنا بمعرّف المستند.
+                        ensureStudentProgressStudentprogressId(documentData, documentId);
+                    }
                     
                     // ملاحظة: لا نضيف metadata لأن Appwrite يتطلب تعريف الحقول مسبقاً
                     // يجب إضافة الحقول من لوحة التحكم Appwrite Console
                     
-                    boolean saved = saveDocument(tableName, actualCollectionId, documentId, documentData);
+                    boolean saved;
+                    if (hadPersistedId) {
+                        saved = patchDocument(tableName, actualCollectionId, documentId, documentData);
+                        if (!saved) {
+                            saved = saveDocument(tableName, actualCollectionId, documentId, documentData);
+                        }
+                    } else {
+                        saved = saveDocument(tableName, actualCollectionId, documentId, documentData);
+                    }
                     if (saved) {
                         // تعيين ID في الكائن بعد الحفظ
                         try {
@@ -771,8 +291,11 @@ public class DALAppWriteConnection {
                         
                         savedItems.add(item);
                         successCount++;
+                    } else {
+                        Log.e(LOG_TAG, "saveData: فشل saveDocument لعنصر " + item.getClass().getSimpleName());
                     }
                 } catch (Exception e) {
+                    Log.e(LOG_TAG, "saveData: استثناء أثناء حفظ عنصر", e);
                 }
             }
             
@@ -844,12 +367,173 @@ public class DALAppWriteConnection {
                 
             } else {
                 String errorMessage = readErrorResponse(connection);
+                Log.e(LOG_TAG, "getData فشل collection=" + tableName + " code=" + responseCode + " → " + errorMessage);
                 return new OperationResult<>(false, "فشل جلب البيانات: " + errorMessage);
             }
             
         } catch (Exception e) {
+            Log.e(LOG_TAG, "getData استثناء collection=" + tableName, e);
             return new OperationResult<>(false, "خطأ في جلب البيانات: " + e.getMessage());
         }
+    }
+
+    /**
+     * استعلام equal بتنسيق JSON كما يتوقعه Appwrite 1.9+ في REST (الصيغة المختصرة equal(...) تُرفض).
+     * يطابق تسلسل {@code Query.equal} في SDK: الحقل {@code attribute} وليس {@code column} (الأخير لـ Tables DB).
+     */
+    private static String appwriteQueryEqual(String attribute, String value) {
+        JsonObject q = new JsonObject();
+        q.addProperty("method", "equal");
+        q.addProperty("attribute", attribute);
+        JsonArray values = new JsonArray();
+        values.add(value != null ? value : "");
+        q.add("values", values);
+        return q.toString();
+    }
+
+    private static String appwriteQueryLimit(int limit) {
+        JsonObject q = new JsonObject();
+        q.addProperty("method", "limit");
+        JsonArray values = new JsonArray();
+        values.add(limit);
+        q.add("values", values);
+        return q.toString();
+    }
+
+    /**
+     * جلب مستندات مع queries (مثل equal + limit). بدون ذلك قد يعيد Appwrite أول صفحة فقط
+     * فيُعرض تقدّم طالب قديم أو يُفقد مستند {@code letter_listens} في الواجهة.
+     */
+    public <T> OperationResult<ArrayList<T>> getDataWithQueries(
+            String tableName,
+            String collectionId,
+            Class<T> classType,
+            List<String> queries) {
+        try {
+            if (!tableExists(tableName, collectionId)) {
+                return new OperationResult<>(false, "الجدول غير موجود: " + tableName);
+            }
+            String coll = collectionId != null ? collectionId : tableName;
+            StringBuilder urlSb = new StringBuilder(BASE_URL + "/databases/" + MAIN_DATABASE_ID
+                    + "/collections/" + coll + "/documents");
+            if (queries != null && !queries.isEmpty()) {
+                urlSb.append("?");
+                for (int i = 0; i < queries.size(); i++) {
+                    if (i > 0) {
+                        urlSb.append("&");
+                    }
+                    urlSb.append("queries[]=").append(
+                            URLEncoder.encode(queries.get(i), StandardCharsets.UTF_8.name()));
+                }
+            }
+            URL url = new URL(urlSb.toString());
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("X-Appwrite-Project", PROJECT_ID);
+            connection.setRequestProperty("X-Appwrite-Key", API_KEY);
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(10000);
+
+            int responseCode = connection.getResponseCode();
+
+            if (responseCode == 200) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+                reader.close();
+                ArrayList<T> items = parseDocumentResponse(response.toString(), classType);
+                return new OperationResult<>(true, "تم جلب البيانات بنجاح", items);
+            } else {
+                String errorMessage = readErrorResponse(connection);
+                Log.e(LOG_TAG, "getDataWithQueries فشل collection=" + tableName
+                        + " code=" + responseCode + " → " + errorMessage);
+                return new OperationResult<>(false, "فشل جلب البيانات: " + errorMessage);
+            }
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "getDataWithQueries استثناء collection=" + tableName, e);
+            return new OperationResult<>(false, "خطأ في جلب البيانات: " + e.getMessage());
+        }
+    }
+
+    /**
+     * عند وجود أكثر من مستند {@code student_progress} لنفس الطالب نأخذ الأحدث تحديثاً.
+     */
+    public static StudentProgress pickNewestStudentProgress(List<StudentProgress> list) {
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
+        StudentProgress best = list.get(0);
+        for (int i = 1; i < list.size(); i++) {
+            StudentProgress p = list.get(i);
+            Date bu = best.getUpdatedAt();
+            Date pu = p.getUpdatedAt();
+            if (pu != null && (bu == null || pu.after(bu))) {
+                best = p;
+            }
+        }
+        return best;
+    }
+
+    /** سجلات الاستماع الخاصة بالطالب فقط (مع استعلام equal؛ احتياطي: تصفية محلية). */
+    public OperationResult<ArrayList<LetterListenRecord>> getLetterListenRecordsForStudent(String studentId) {
+        if (studentId == null || studentId.isEmpty()) {
+            return new OperationResult<>(false, "معرف الطالب فارغ", new ArrayList<>());
+        }
+        List<String> queries = new ArrayList<>();
+        queries.add(appwriteQueryEqual("studentRef", studentId));
+        queries.add(appwriteQueryLimit(500));
+        OperationResult<ArrayList<LetterListenRecord>> r =
+                getDataWithQueries(LetterListenRecord.COLLECTION_NAME, null,
+                        LetterListenRecord.class, queries);
+        if (r.success && r.data != null) {
+            return r;
+        }
+        // احتياط: إذا رفض السيرفر صيغة queries[] نجمع كل السجلات ثم نمرّر ما يطابق studentRef فقط (أغلى لكن يعمل)
+        Log.w(LOG_TAG, "getLetterListenRecordsForStudent: fallback بعد فشل الاستعلام — " + r.message);
+        OperationResult<ArrayList<LetterListenRecord>> all =
+                getData(LetterListenRecord.COLLECTION_NAME, null, LetterListenRecord.class);
+        if (!all.success || all.data == null) {
+            return all;
+        }
+        ArrayList<LetterListenRecord> filtered = new ArrayList<>();
+        for (LetterListenRecord rec : all.data) {
+            if (studentId.equals(rec.getStudentRef())) {
+                filtered.add(rec);
+            }
+        }
+        return new OperationResult<>(true, "تصفية محلية", filtered);
+    }
+
+    /** مستندات تقدّم الطالب فقط. */
+    public OperationResult<ArrayList<StudentProgress>> getStudentProgressForStudent(String studentId) {
+        if (studentId == null || studentId.isEmpty()) {
+            return new OperationResult<>(false, "معرف الطالب فارغ", new ArrayList<>());
+        }
+        List<String> queries = new ArrayList<>();
+        queries.add(appwriteQueryEqual("studentId", studentId));
+        queries.add(appwriteQueryLimit(50));
+        OperationResult<ArrayList<StudentProgress>> r =
+                getDataWithQueries("student_progress", null, StudentProgress.class, queries);
+        if (r.success && r.data != null) {
+            return r;
+        }
+        // نفس فكرة letter_listens: fallback بتصفية محلية بعد getData العام
+        Log.w(LOG_TAG, "getStudentProgressForStudent: fallback بعد فشل الاستعلام — " + r.message);
+        OperationResult<ArrayList<StudentProgress>> all =
+                getData("student_progress", null, StudentProgress.class);
+        if (!all.success || all.data == null) {
+            return all;
+        }
+        ArrayList<StudentProgress> filtered = new ArrayList<>();
+        for (StudentProgress p : all.data) {
+            if (studentId.equals(p.getStudentId())) {
+                filtered.add(p);
+            }
+        }
+        return new OperationResult<>(true, "تصفية محلية", filtered);
     }
     
     /**
@@ -881,10 +565,14 @@ public class DALAppWriteConnection {
             }
             
             Map<String, Object> documentData = convertObjectToMap(data);
-            documentData.put("updatedAt", new Date().toString());
-            documentData.put("updatedBy", currentUserId != null ? currentUserId : "system");
-            
-            boolean updated = saveDocument(tableName, collectionId, documentId, documentData);
+            documentData.put("updatedAt", formatIsoUtc(new Date()));
+
+            if (data instanceof StudentProgress) {
+                encodeStudentProgressMapsForWrite(documentData, (StudentProgress) data);
+                ensureStudentProgressStudentprogressId(documentData, documentId);
+            }
+
+            boolean updated = patchDocument(tableName, collectionId, documentId, documentData);
             
             if (updated) {
                 return new OperationResult<>(true, "تم التحديث بنجاح", data);
@@ -894,53 +582,6 @@ public class DALAppWriteConnection {
             
         } catch (Exception e) {
             return new OperationResult<>(false, "خطأ في تحديث البيانات: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * حذف مستند من قاعدة البيانات
-     * @param tableName اسم الجدول
-     * @param documentId معرف المستند المراد حذفه
-     * @param collectionId معرف المجموعة (اختياري)
-     * @return نتيجة العملية
-     * 
-     * تحذير: هذه العملية نهائية ولا يمكن التراجع عنها
-     * 
-     * مثال على الاستخدام:
-     * OperationResult<Void> result = dal.deleteData("products", "document-id-here", null);
-     * 
-     * if (result.success) {
-     *     Log.d("SUCCESS", "تم حذف المنتج بنجاح");
-     * } else {
-     *     Log.e("ERROR", "فشل حذف المنتج: " + result.message);
-     * }
-     */
-    public OperationResult<Void> deleteData(String tableName, String documentId, String collectionId) {
-        try {
-            if (documentId == null || documentId.isEmpty()) {
-                return new OperationResult<>(false, "معرف المستند لا يمكن أن يكون فارغاً");
-            }
-            
-            URL url = new URL(BASE_URL + "/databases/" + MAIN_DATABASE_ID + "/collections/" + 
-                            (collectionId != null ? collectionId : tableName) + "/documents/" + documentId);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("DELETE");
-            connection.setRequestProperty("X-Appwrite-Project", PROJECT_ID);
-            connection.setRequestProperty("X-Appwrite-Key", API_KEY);
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(10000);
-            
-            int responseCode = connection.getResponseCode();
-            
-            if (responseCode == 200 || responseCode == 204) {
-                return new OperationResult<>(true, "تم الحذف بنجاح");
-            } else {
-                String errorMessage = readErrorResponse(connection);
-                return new OperationResult<>(false, "فشل حذف المستند: " + errorMessage);
-            }
-            
-        } catch (Exception e) {
-            return new OperationResult<>(false, "خطأ في حذف البيانات: " + e.getMessage());
         }
     }
     
@@ -987,11 +628,30 @@ public class DALAppWriteConnection {
                     response.append(line);
                 }
                 reader.close();
-                
-                // تحويل JSON لكائن Java
-                T item = gson.fromJson(response.toString(), classType);
+
+                JsonObject documentJson = gson.fromJson(response.toString(), JsonObject.class);
+                if (documentJson == null) {
+                    return new OperationResult<>(false, "فشل في تحويل البيانات");
+                }
+                flattenAppwriteDocumentData(documentJson);
+                if (documentJson.has("$id")) {
+                    documentJson.addProperty("id", documentJson.get("$id").getAsString());
+                    documentJson.remove("$id");
+                }
+
+                T item = gson.fromJson(documentJson, classType);
                 
                 if (item != null) {
+                    if (item instanceof StudentProgress) {
+                        hydrateStudentProgressFromDocument((StudentProgress) item, documentJson);
+                    }
+                    try {
+                        java.lang.reflect.Method setIdMethod = classType.getMethod("setId", String.class);
+                        if (documentJson != null && documentJson.has("id")) {
+                            setIdMethod.invoke(item, documentJson.get("id").getAsString());
+                        }
+                    } catch (Exception ignored) {
+                    }
                     return new OperationResult<>(true, "تم جلب العنصر بنجاح", item);
                 } else {
                     return new OperationResult<>(false, "فشل في تحويل البيانات");
@@ -1164,9 +824,26 @@ public class DALAppWriteConnection {
             }
             
         } catch (Exception e) {
-            // في حالة الخطأ، نفترض أن الجدول موجود لتجنب إعادة إنشائه
-            return true;
+            Log.w(LOG_TAG, "tableExists خطأ لـ \"" + tableName + "\" — سنعتبر المجموعة غير موجودة لمحاولة الإنشاء", e);
+            return false;
         }
+    }
+
+    /** تواريخ Appwrite كسلسلة ISO UTC */
+    private static String formatIsoUtc(Date date) {
+        if (date == null) {
+            return null;
+        }
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return sdf.format(date);
+    }
+
+    private static Object normalizeAppwriteValue(Object value) {
+        if (value instanceof Date) {
+            return formatIsoUtc((Date) value);
+        }
+        return value;
     }
     
     // === دوال مساعدة لقواعد البيانات ===
@@ -1241,23 +918,34 @@ public class DALAppWriteConnection {
                 }
                 
                 // إضافة الحقول المهمة فقط
-                cleanData.put(key, value);
+                cleanData.put(key, normalizeAppwriteValue(value));
             }
             
             requestBody.put("data", cleanData);
             
             String jsonBody = gson.toJson(requestBody);
+
+            Log.d(LOG_TAG, "POST document collection=" + (collectionId != null ? collectionId : tableName)
+                    + " documentId=" + documentId);
             
             try (OutputStream os = connection.getOutputStream()) {
-                os.write(jsonBody.getBytes());
+                os.write(jsonBody.getBytes(StandardCharsets.UTF_8));
             }
             
             int responseCode = connection.getResponseCode();
             
             if (responseCode >= 200 && responseCode < 300) {
+                Log.d(LOG_TAG, "POST document نجح code=" + responseCode);
                 return true;
             } else {
                 String errorResponse = readErrorResponse(connection);
+                Log.e(LOG_TAG, "POST document فشل code=" + responseCode + " collection="
+                        + (collectionId != null ? collectionId : tableName) + " → " + errorResponse);
+                
+                if (responseCode == 409 && errorResponse.contains("document_already_exists")) {
+                    Log.d(LOG_TAG, "POST 409 — المستند موجود، استخدام PATCH");
+                    return patchDocument(tableName, collectionId, documentId, documentData);
+                }
                 
                 // إصلاح schema errors: محاولة أخرى بدون schema validation
                 if (errorResponse.contains("Unknown attribute") || errorResponse.contains("document_invalid_structure")) {
@@ -1267,6 +955,60 @@ public class DALAppWriteConnection {
                 return false;
             }
         } catch (Exception e) {
+            Log.e(LOG_TAG, "saveDocument استثناء collection=" + tableName, e);
+            return false;
+        }
+    }
+
+    /**
+     * تحديث حقول مستند موجود (REST PATCH) — مناسب لتحديثات جزئية.
+     */
+    private boolean patchDocument(String tableName, String collectionId, String documentId,
+                                  Map<String, Object> documentData) {
+        try {
+            URL url = new URL(BASE_URL + "/databases/" + MAIN_DATABASE_ID + "/collections/" +
+                    (collectionId != null ? collectionId : tableName) + "/documents/" + documentId);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("PATCH");
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setRequestProperty("X-Appwrite-Project", PROJECT_ID);
+            connection.setRequestProperty("X-Appwrite-Key", API_KEY);
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(10000);
+            connection.setDoOutput(true);
+
+            Map<String, Object> cleanData = new HashMap<>();
+            for (Map.Entry<String, Object> entry : documentData.entrySet()) {
+                String key = entry.getKey();
+                if (key.equals("metadata") || key.equals("documentId") ||
+                        key.equals("createdAt") || key.equals("createdBy") ||
+                        key.equals("class") || key.equals("$") || key.equals("id")) {
+                    continue;
+                }
+                cleanData.put(key, normalizeAppwriteValue(entry.getValue()));
+            }
+
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("data", cleanData);
+            String jsonBody = gson.toJson(requestBody);
+
+            Log.d(LOG_TAG, "PATCH document collection=" + (collectionId != null ? collectionId : tableName)
+                    + " documentId=" + documentId);
+
+            try (OutputStream os = connection.getOutputStream()) {
+                os.write(jsonBody.getBytes(StandardCharsets.UTF_8));
+            }
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode >= 200 && responseCode < 300) {
+                Log.d(LOG_TAG, "PATCH نجح code=" + responseCode);
+                return true;
+            }
+            String err = readErrorResponse(connection);
+            Log.e(LOG_TAG, "PATCH فشل code=" + responseCode + " → " + err);
+            return false;
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "patchDocument استثناء", e);
             return false;
         }
     }
@@ -1384,6 +1126,8 @@ public class DALAppWriteConnection {
                 for (int i = 0; i < documentsArray.size(); i++) {
                     try {
                         JsonObject documentJson = documentsArray.get(i).getAsJsonObject();
+
+                        flattenAppwriteDocumentData(documentJson);
                         
                         // تحويل $id من Appwrite إلى id للكائن Java
                         if (documentJson.has("$id")) {
@@ -1392,16 +1136,13 @@ public class DALAppWriteConnection {
                             documentJson.remove("$id");
                         }
                         
-                        // تحويل studentId إلى id إذا كان موجوداً
-                        if (documentJson.has("studentId")) {
-                            String studentId = documentJson.get("studentId").getAsString();
-                            documentJson.addProperty("id", studentId);
-                        }
-                        
                         // تحويل المستند إلى كائن Java
                         T item = gson.fromJson(documentJson, classType);
                         
                         if (item != null) {
+                            if (item instanceof StudentProgress) {
+                                hydrateStudentProgressFromDocument((StudentProgress) item, documentJson);
+                            }
                             // التأكد من تعيين ID في الكائن
                             try {
                                 java.lang.reflect.Method setIdMethod = classType.getMethod("setId", String.class);
@@ -1426,6 +1167,113 @@ public class DALAppWriteConnection {
             // خطأ في تحليل الاستجابة
             return new ArrayList<>();
         }
+    }
+
+    /**
+     * يدمج كائن {@code data} الذي تعيده Appwrite داخل المستند حتى يقرأ Gson الحقول مباشرة.
+     */
+    private void flattenAppwriteDocumentData(JsonObject documentJson) {
+        if (documentJson == null || !documentJson.has("data") || !documentJson.get("data").isJsonObject()) {
+            return;
+        }
+        JsonObject data = documentJson.getAsJsonObject("data");
+        for (Map.Entry<String, JsonElement> e : data.entrySet()) {
+            documentJson.add(e.getKey(), e.getValue());
+        }
+    }
+
+    /**
+     * مخطط Appwrite غالبًا يعرّف lettersLearned / wordsProgress كـ string — نخزّن JSON كنص.
+     */
+    private void encodeStudentProgressMapsForWrite(Map<String, Object> documentData, StudentProgress sp) {
+        documentData.put("lettersLearned", gson.toJson(sp.getLettersLearned()));
+        Map<String, Integer> wp = sp.getWordsProgress();
+        documentData.put("wordsProgress", gson.toJson(wp != null ? wp : new HashMap<String, Integer>()));
+        documentData.put("lettersQuizPassed", gson.toJson(sp.getLettersQuizPassed()));
+        documentData.put("letterQuizHistory", gson.toJson(sp.getLetterQuizHistory()));
+    }
+
+    /**
+     * يطابق مخطط Appwrite الذي يفرض السمة {@code studentprogressId} (نفس منطق إعادة تسمية {@code id} في saveData).
+     */
+    private static void ensureStudentProgressStudentprogressId(Map<String, Object> documentData, String documentId) {
+        if (documentId == null || documentId.isEmpty()) {
+            return;
+        }
+        Object existing = documentData.get("studentprogressId");
+        if (existing == null || existing.toString().isEmpty()) {
+            documentData.put("studentprogressId", documentId);
+        }
+    }
+
+    private void hydrateStudentProgressFromDocument(StudentProgress sp, JsonObject documentJson) {
+        Type boolMapType = new TypeToken<Map<String, Boolean>>(){}.getType();
+        Type intMapType = new TypeToken<Map<String, Integer>>(){}.getType();
+
+        if (documentJson.has("lettersLearned")) {
+            JsonElement el = documentJson.get("lettersLearned");
+            try {
+                Map<String, Boolean> m = parseJsonMap(el, boolMapType);
+                if (m != null) {
+                    sp.setLettersLearned(m);
+                }
+            } catch (Exception e) {
+                Log.w(LOG_TAG, "hydrateStudentProgress lettersLearned", e);
+            }
+        }
+        if (documentJson.has("wordsProgress")) {
+            JsonElement el = documentJson.get("wordsProgress");
+            try {
+                Map<String, Integer> m = parseJsonMap(el, intMapType);
+                if (m != null) {
+                    sp.setWordsProgress(m);
+                }
+            } catch (Exception e) {
+                Log.w(LOG_TAG, "hydrateStudentProgress wordsProgress", e);
+            }
+        }
+        if (documentJson.has("lettersQuizPassed")) {
+            JsonElement el = documentJson.get("lettersQuizPassed");
+            try {
+                Map<String, Boolean> m = parseJsonMap(el, boolMapType);
+                if (m != null) {
+                    sp.setLettersQuizPassed(m);
+                }
+            } catch (Exception e) {
+                Log.w(LOG_TAG, "hydrateStudentProgress lettersQuizPassed", e);
+            }
+        }
+        if (documentJson.has("letterQuizHistory")) {
+            JsonElement el = documentJson.get("letterQuizHistory");
+            Type listSessionType = new TypeToken<ArrayList<LetterQuizSession>>(){}.getType();
+            try {
+                ArrayList<LetterQuizSession> sessions = null;
+                if (el.isJsonPrimitive() && el.getAsJsonPrimitive().isString()) {
+                    sessions = gson.fromJson(el.getAsString(), listSessionType);
+                } else if (el.isJsonArray()) {
+                    sessions = gson.fromJson(el, listSessionType);
+                }
+                if (sessions != null) {
+                    sp.setLetterQuizHistory(sessions);
+                }
+            } catch (Exception e) {
+                Log.w(LOG_TAG, "hydrateStudentProgress letterQuizHistory", e);
+            }
+        }
+        sp.normalizeLetterMapKeys();
+    }
+
+    private <M> M parseJsonMap(JsonElement el, Type mapType) {
+        if (el == null || el.isJsonNull()) {
+            return null;
+        }
+        if (el.isJsonPrimitive() && el.getAsJsonPrimitive().isString()) {
+            return gson.fromJson(el.getAsString(), mapType);
+        }
+        if (el.isJsonObject()) {
+            return gson.fromJson(el, mapType);
+        }
+        return null;
     }
     
     // === دوال إدارة التخزين والملفات ===
@@ -1533,235 +1381,47 @@ public class DALAppWriteConnection {
             return new OperationResult<>(false, "خطأ في رفع الملف: " + e.getMessage());
         }
     }
-    
+
     /**
-     * جلب قائمة بجميع الملفات في تخزين محدد
-     * @param bucketId معرف التخزين (اختياري، يستخدم التخزين الرئيسي إذا null)
-     * @return نتيجة العملية مع قائمة الملفات
-     * 
-     * مثال على الاستخدام:
-     * OperationResult<ArrayList<FileInfo>> result = dal.getStorageFiles(null);
-     * 
-     * if (result.success) {
-     *     ArrayList<FileInfo> files = result.data;
-     *     Log.d("FILES", "عدد الملفات: " + files.size());
-     *     
-     *     for (FileInfo file : files) {
-     *         Log.d("FILE", "الاسم: " + file.fileName);
-     *         Log.d("FILE", "النوع: " + file.mimeType);
-     *         Log.d("FILE", "الحجم: " + (file.fileSize / 1024) + " KB");
-     *     }
-     * } else {
-     *     Log.e("ERROR", "فشل جلب الملفات: " + result.message);
-     * }
+     * تنزيل ملف من رابط تحميل Appwrite Storage مع مصادقة الخادم.
+     * طلبات Glide العادية بدون الرؤوس تعيد 401.
      */
-    public OperationResult<ArrayList<FileInfo>> getStorageFiles(String bucketId) {
+    public OperationResult<byte[]> downloadStorageAuthenticated(String fileDownloadUrl) {
+        if (fileDownloadUrl == null || fileDownloadUrl.isEmpty()) {
+            return new OperationResult<>(false, "رابط فارغ", null);
+        }
+        HttpURLConnection connection = null;
         try {
-            String actualBucketId = bucketId != null ? bucketId : MAIN_STORAGE_BUCKET_ID;
-            
-            URL url = new URL(BASE_URL + "/storage/buckets/" + actualBucketId + "/files");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            URL url = new URL(fileDownloadUrl);
+            connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setRequestProperty("X-Appwrite-Project", PROJECT_ID);
             connection.setRequestProperty("X-Appwrite-Key", API_KEY);
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(10000);
-            
+            connection.setConnectTimeout(30000);
+            connection.setReadTimeout(30000);
+
             int responseCode = connection.getResponseCode();
-            
-            if (responseCode == 200) {
-                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    response.append(line);
+            if (responseCode >= 200 && responseCode < 300) {
+                try (InputStream in = connection.getInputStream();
+                     ByteArrayOutputStream buf = new ByteArrayOutputStream()) {
+                    byte[] chunk = new byte[8192];
+                    int n;
+                    while ((n = in.read(chunk)) != -1) {
+                        buf.write(chunk, 0, n);
+                    }
+                    byte[] bytes = buf.toByteArray();
+                    return new OperationResult<>(true, "تم التنزيل", bytes);
                 }
-                reader.close();
-                
-                // تحليل الاستجابة
-                ArrayList<FileInfo> files = parseStorageFilesResponse(response.toString(), actualBucketId);
-                
-                return new OperationResult<>(true, "تم جلب الملفات بنجاح", files);
-                
-            } else {
-                String errorMessage = readErrorResponse(connection);
-                return new OperationResult<>(false, "فشل جلب الملفات: " + errorMessage);
             }
-            
+            String err = readErrorResponse(connection);
+            return new OperationResult<>(false, "HTTP " + responseCode + ": " + err, null);
         } catch (Exception e) {
-            return new OperationResult<>(false, "خطأ في جلب الملفات: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * حذف ملف من التخزين
-     * @param fileId معرف الملف المراد حذفه
-     * @param bucketId معرف التخزين (اختياري، يستخدم التخزين الرئيسي إذا null)
-     * @return نتيجة العملية
-     * 
-     * تحذير: هذه العملية نهائية ولا يمكن التراجع عنها
-     * 
-     * مثال على الاستخدام:
-     * OperationResult<Void> result = dal.deleteFile("file-id-here", null);
-     * 
-     * if (result.success) {
-     *     Log.d("SUCCESS", "تم حذف الملف بنجاح");
-     * } else {
-     *     Log.e("ERROR", "فشل حذف الملف: " + result.message);
-     * }
-     */
-    public OperationResult<Void> deleteFile(String fileId, String bucketId) {
-        try {
-            if (fileId == null || fileId.isEmpty()) {
-                return new OperationResult<>(false, "معرف الملف لا يمكن أن يكون فارغاً");
+            Log.e(LOG_TAG, "downloadStorageAuthenticated", e);
+            return new OperationResult<>(false, e.getMessage(), null);
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
             }
-            
-            String actualBucketId = bucketId != null ? bucketId : MAIN_STORAGE_BUCKET_ID;
-            
-            URL url = new URL(BASE_URL + "/storage/buckets/" + actualBucketId + "/files/" + fileId);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("DELETE");
-            connection.setRequestProperty("X-Appwrite-Project", PROJECT_ID);
-            connection.setRequestProperty("X-Appwrite-Key", API_KEY);
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(10000);
-            
-            int responseCode = connection.getResponseCode();
-            
-            if (responseCode == 200 || responseCode == 204) {
-                return new OperationResult<>(true, "تم حذف الملف بنجاح");
-            } else {
-                String errorMessage = readErrorResponse(connection);
-                return new OperationResult<>(false, "فشل حذف الملف: " + errorMessage);
-            }
-            
-        } catch (Exception e) {
-            return new OperationResult<>(false, "خطأ في حذف الملف: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * جلب معلومات ملف محدد بواسطة معرفه
-     * @param fileId معرف الملف
-     * @param bucketId معرف التخزين (اختياري، يستخدم التخزين الرئيسي إذا null)
-     * @return نتيجة العملية مع معلومات الملف
-     * 
-     * مثال على الاستخدام:
-     * OperationResult<FileInfo> result = dal.getFileInfo("file-id-here", null);
-     * 
-     * if (result.success) {
-     *     FileInfo fileInfo = result.data;
-     *     Log.d("FILE", "الاسم: " + fileInfo.fileName);
-     *     Log.d("FILE", "الرابط: " + fileInfo.fileUrl);
-     *     Log.d("FILE", "الحجم: " + fileInfo.fileSize + " بايت");
-     * } else {
-     *     Log.e("ERROR", "فشل جلب معلومات الملف: " + result.message);
-     * }
-     */
-    public OperationResult<FileInfo> getFileInfo(String fileId, String bucketId) {
-        try {
-            if (fileId == null || fileId.isEmpty()) {
-                return new OperationResult<>(false, "معرف الملف لا يمكن أن يكون فارغاً");
-            }
-            
-            String actualBucketId = bucketId != null ? bucketId : MAIN_STORAGE_BUCKET_ID;
-            
-            URL url = new URL(BASE_URL + "/storage/buckets/" + actualBucketId + "/files/" + fileId);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-            connection.setRequestProperty("X-Appwrite-Project", PROJECT_ID);
-            connection.setRequestProperty("X-Appwrite-Key", API_KEY);
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(10000);
-            
-            int responseCode = connection.getResponseCode();
-            
-            if (responseCode == 200) {
-                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    response.append(line);
-                }
-                reader.close();
-                
-                // تحليل الاستجابة
-                FileInfo fileInfo = parseSingleFileResponse(response.toString(), actualBucketId);
-                
-                if (fileInfo != null) {
-                    return new OperationResult<>(true, "تم جلب معلومات الملف بنجاح", fileInfo);
-                } else {
-                    return new OperationResult<>(false, "فشل في تحليل بيانات الملف");
-                }
-                
-            } else {
-                String errorMessage = readErrorResponse(connection);
-                return new OperationResult<>(false, "فشل جلب معلومات الملف: " + errorMessage);
-            }
-            
-        } catch (Exception e) {
-            return new OperationResult<>(false, "خطأ في جلب معلومات الملف: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * تحديث ملف موجود في التخزين
-     * @param fileId معرف الملف المراد تحديثه
-     * @param newFileData بيانات الملف الجديدة
-     * @param newFileName الاسم الجديد للملف (اختياري)
-     * @param newMimeType النوع الجديد للملف (اختياري)
-     * @param bucketId معرف التخزين (اختياري)
-     * @return نتيجة العملية مع معلومات الملف المحدث
-     * 
-     * مثال على الاستخدام:
-     * // تحديث الصورة
-     * byte[] newImageData = getNewImageBytes();
-     * 
-     * OperationResult<FileInfo> result = dal.updateFile("existing-file-id", 
-     *                                                   newImageData, 
-     *                                                   "updated_photo.jpg", 
-     *                                                   "image/jpeg", 
-     *                                                   null);
-     * 
-     * if (result.success) {
-     *     Log.d("SUCCESS", "تم تحديث الملف بنجاح");
-     *     Log.d("NEW_NAME", "الاسم الجديد: " + result.data.fileName);
-     * } else {
-     *     Log.e("ERROR", "فشل تحديث الملف: " + result.message);
-     * }
-     */
-    public OperationResult<FileInfo> updateFile(String fileId, byte[] newFileData, String newFileName, String newMimeType, String bucketId) {
-        try {
-            if (fileId == null || fileId.isEmpty()) {
-                return new OperationResult<>(false, "معرف الملف لا يمكن أن يكون فارغاً");
-            }
-            
-            if (newFileData == null || newFileData.length == 0) {
-                return new OperationResult<>(false, "بيانات الملف الجديدة لا يمكن أن تكون فارغة");
-            }
-            
-            String actualBucketId = bucketId != null ? bucketId : MAIN_STORAGE_BUCKET_ID;
-            
-            // حذف الملف القديم
-            OperationResult<Void> deleteResult = deleteFile(fileId, actualBucketId);
-            if (!deleteResult.success) {
-                return new OperationResult<>(false, "فشل في حذف الملف القديم: " + deleteResult.message);
-            }
-            
-            // رفع الملف الجديد
-            String finalFileName = newFileName != null ? newFileName : "updated_" + System.currentTimeMillis() + ".bin";
-            String finalMimeType = newMimeType != null ? newMimeType : "application/octet-stream";
-            
-            OperationResult<FileInfo> uploadResult = uploadFile(newFileData, finalFileName, finalMimeType, actualBucketId);
-            
-            if (uploadResult.success) {
-                return new OperationResult<>(true, "تم تحديث الملف بنجاح", uploadResult.data);
-            } else {
-                return new OperationResult<>(false, "فشل في رفع الملف الجديد: " + uploadResult.message);
-            }
-            
-        } catch (Exception e) {
-            return new OperationResult<>(false, "خطأ في تحديث الملف: " + e.getMessage());
         }
     }
     
@@ -1782,7 +1442,7 @@ public class DALAppWriteConnection {
         fileInfo.fileName = fileName;
         fileInfo.mimeType = mimeType;
         fileInfo.bucketId = bucketId;
-        fileInfo.uploadedBy = currentUserId != null ? currentUserId : "system";
+        fileInfo.uploadedBy = "system";
         fileInfo.uploadDate = new Date();
         
         try {
@@ -1810,124 +1470,6 @@ public class DALAppWriteConnection {
         }
         
         return fileInfo;
-    }
-    
-    /**
-     * تحليل استجابة جلب الملفات من التخزين
-     * @param responseString استجابة JSON
-     * @param bucketId معرف التخزين
-     * @return قائمة الملفات
-     */
-    private ArrayList<FileInfo> parseStorageFilesResponse(String responseString, String bucketId) {
-        ArrayList<FileInfo> files = new ArrayList<>();
-        
-        try {
-            String filesArray = extractValue(responseString, "files");
-            if (filesArray != null && !filesArray.equals("null")) {
-                // تحليل الملفات
-                if (filesArray.contains("{")) {
-                    String[] fileObjects = filesArray.split("\\{");
-                    for (String fileObj : fileObjects) {
-                        if (fileObj.contains("}")) {
-                            String fileContent = "{" + fileObj;
-                            FileInfo fileInfo = parseSingleFileResponse(fileContent, bucketId);
-                            if (fileInfo != null) {
-                                files.add(fileInfo);
-                            }
-                        }
-                    }
-                }
-            }
-            
-        } catch (Exception e) {
-        }
-        
-        return files;
-    }
-    
-    /**
-     * تحليل استجابة ملف واحد
-     * @param responseString استجابة JSON
-     * @param bucketId معرف التخزين
-     * @return معلومات الملف أو null إذا فشل التحليل
-     */
-    private FileInfo parseSingleFileResponse(String responseString, String bucketId) {
-        try {
-            FileInfo fileInfo = new FileInfo();
-            fileInfo.fileId = extractValue(responseString, "$id");
-            fileInfo.fileName = extractValue(responseString, "name");
-            fileInfo.mimeType = extractValue(responseString, "mimeType");
-            fileInfo.bucketId = bucketId;
-            
-            if (fileInfo.fileId != null) {
-                fileInfo.fileUrl = "https://cloud.appwrite.io/v1/storage/buckets/" + bucketId + "/files/" + fileInfo.fileId;
-                
-                // استخراج الحجم
-                String sizeString = extractValue(responseString, "sizeOriginal");
-                if (sizeString == null) {
-                    sizeString = extractValue(responseString, "size");
-                }
-                
-                if (sizeString != null) {
-                    try {
-                        fileInfo.fileSize = Long.parseLong(sizeString);
-                    } catch (NumberFormatException e) {
-                        fileInfo.fileSize = 0;
-                    }
-                }
-                
-                // استخراج معلومات إضافية إذا كانت متوفرة
-                String uploadedBy = extractValue(responseString, "uploadedBy");
-                if (uploadedBy != null) {
-                    fileInfo.uploadedBy = uploadedBy;
-                }
-                
-                return fileInfo;
-            }
-            
-        } catch (Exception e) {
-        }
-        
-        return null;
-    }
-    
-    /**
-     * إضافة Document permissions للجدول الجديد للسماح بالحفظ
-     * @param collectionId معرف المجموعة
-     * @param tableName اسم الجدول
-     */
-    private void addDocumentPermissions(String collectionId, String tableName) {
-        try {
-            // إضافة document permissions للعامة (allows read and write)
-            URL url = new URL(BASE_URL + "/databases/" + MAIN_DATABASE_ID + "/collections/" + 
-                            collectionId + "/permissions");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setRequestProperty("X-Appwrite-Project", PROJECT_ID);
-            connection.setRequestProperty("X-Appwrite-Key", API_KEY);
-            connection.setConnectTimeout(5000);
-            connection.setReadTimeout(5000);
-            connection.setDoOutput(true);
-            
-            // إعداد permissions للعامة
-            Map<String, Object> permissionData = new HashMap<>();
-            permissionData.put("permission", "documents.read,documents.write");
-            
-            String jsonBody = gson.toJson(permissionData);
-            
-            try (OutputStream os = connection.getOutputStream()) {
-                os.write(jsonBody.getBytes());
-            }
-            
-            int responseCode = connection.getResponseCode();
-            if (responseCode >= 200 && responseCode < 300) {
-            } else {
-                String errorResponse = readErrorResponse(connection);
-            }
-            
-        } catch (Exception e) {
-        }
     }
     
     /**

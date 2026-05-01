@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?><!--
+   قواعد النسخ الاحتياطي الافتراضية من أندرويد — عدّليها إذا بدكم تشملوا prefs معينة.
+
    Sample backup rules file; uncomment and customize as necessary.
    See https://developer.android.com/guide/topics/data/autobackup
    for details.

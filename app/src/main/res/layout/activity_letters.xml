@@ -1,31 +1,81 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- لوحة الحروف — شبكة أزرار، تلميح، وهيدر مع زر رجوع -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#F5F5F5">
+    android:layout_height="match_parent">
 
-    <!-- الشريط العلوي -->
-    <include
-        android:id="@+id/toolbar"
-        layout="@layout/toolbar_custom" />
-
-    <ScrollView
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:padding="16dp">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="#F5F5F5">
 
-        <GridLayout
-            android:id="@+id/gridLetters"
+        <!-- الشريط العلوي -->
+        <include
+            android:id="@+id/toolbar"
+            layout="@layout/toolbar_custom" />
+
+        <ScrollView
+            android:id="@+id/scrollLetters"
             android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:padding="16dp">
+
+            <GridLayout
+                android:id="@+id/gridLetters"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="4"
+                android:gravity="center"
+                android:alignmentMode="alignMargins"
+                android:useDefaultMargins="false" />
+
+        </ScrollView>
+    </LinearLayout>
+
+    <!-- طبقة معتمة: الحرف في المنتصف، تمنع أي نقر خلفها -->
+    <FrameLayout
+        android:id="@+id/letterSpotlightOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:background="#DD000000"
+        android:elevation="32dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:columnCount="4"
-            android:rowCount="7"
-            android:alignmentMode="alignMargins"
-            android:useDefaultMargins="true" />
+            android:layout_gravity="center"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
 
-    </ScrollView>
+            <TextView
+                android:id="@+id/tvLetterSpotlight"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textSize="132sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:textDirection="ltr"
+                android:includeFontPadding="false" />
 
-</LinearLayout>
-
+            <TextView
+                android:id="@+id/tvSpotlightCountdown"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text=""
+                android:textSize="56sp"
+                android:textStyle="bold"
+                android:textColor="#E8F5E9"
+                android:includeFontPadding="false"
+                android:textLocale="en-US"
+                android:textDirection="ltr" />
+        </LinearLayout>
+    </FrameLayout>
+</FrameLayout>

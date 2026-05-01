@@ -1,8 +1,14 @@
+<!-- ثيم النهار — RTL، Material 3، وألوان شريط الحالة/التنقل -->
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.RemasProject" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="android:layoutDirection">rtl</item>
+        <item name="android:textDirection">rtl</item>
+        <item name="android:textAlignment">viewStart</item>
+        <item name="android:statusBarColor">@color/app_system_bar</item>
+        <item name="android:navigationBarColor">@color/app_navigation_bar</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">true</item>
     </style>
 
     <style name="Theme.RemasProject" parent="Base.Theme.RemasProject" />

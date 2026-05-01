@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- شاشة الدخول والتسجيل — حقول، صورة دائرية، وأزرار الإرسال -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -62,7 +64,7 @@
         android:background="@android:drawable/dialog_holo_light_frame"
         android:padding="16dp"
         android:layout_marginBottom="16dp"
-        android:gravity="right|center_vertical"
+        android:gravity="start|center_vertical"
         android:inputType="textPersonName" />
 
     <EditText
@@ -75,7 +77,7 @@
         android:background="@android:drawable/dialog_holo_light_frame"
         android:padding="16dp"
         android:layout_marginBottom="16dp"
-        android:gravity="right|center_vertical"
+        android:gravity="start|center_vertical"
         android:inputType="textEmailAddress" />
 
     <EditText
@@ -88,7 +90,7 @@
         android:background="@android:drawable/dialog_holo_light_frame"
         android:padding="16dp"
         android:layout_marginBottom="24dp"
-        android:gravity="right|center_vertical"
+        android:gravity="start|center_vertical"
         android:inputType="textPassword" />
 
     <LinearLayout
@@ -98,17 +100,29 @@
         android:orientation="vertical"
         android:visibility="gone" />
 
-    <Button
+    <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnLogin"
-        android:layout_width="match_parent"
-        android:layout_height="70dp"
+        android:layout_width="160dp"
+        android:layout_height="160dp"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
         android:text="دخول"
+        android:textAllCaps="false"
         android:textSize="20sp"
         android:textStyle="bold"
         android:textColor="#FFFFFF"
-        android:background="#4CAF50"
+        android:gravity="center"
+        android:textAlignment="center"
+        android:includeFontPadding="false"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="20dp"
+        android:background="@drawable/bg_login_circle_green_ripple"
         android:layout_marginBottom="16dp"
-        android:elevation="8dp" />
+        android:elevation="8dp"
+        android:stateListAnimator="@null"
+        app:backgroundTint="@null" />
 
     <ProgressBar
         android:id="@+id/progressBar"

@@ -1,3 +1,6 @@
+/**
+ * موديل الطالب اللي بنخزّنه بـ Appwrite — اسم، إيميل، صورة، وعلامة معلّم لو بدكم صلاحيات إعدادات.
+ */
 package com.example.RemasProject.model;
 
 import java.util.Date;
@@ -7,10 +10,13 @@ public class Student {
     private String name;
     private String email;
     private String password; // سيتم تشفيره
-    private String profileImageUrl;
+    /** فارغ حتى يُرفع صورة؛ يجب إرسال القيمة لـ Appwrite عندما يكون الحقل مطلوباً في المخطط. */
+    private String profileImageUrl = "";
     private Date createdAt;
     private Date lastLoginAt;
     private boolean isActive;
+    /** إن كان true يُسمح للطالب برؤية إعدادات التعلّم في الشريط السفلي (إلى جانب بريد المشرف). */
+    private boolean isTeacher;
     
     public Student() {}
     
@@ -18,9 +24,11 @@ public class Student {
         this.name = name;
         this.email = email;
         this.password = password;
+        this.profileImageUrl = "";
         this.createdAt = new Date();
         this.lastLoginAt = new Date();
         this.isActive = true;
+        this.isTeacher = false;
     }
     
     // Getters and Setters
@@ -47,5 +55,8 @@ public class Student {
     
     public String getProfileImageUrl() { return profileImageUrl; }
     public void setProfileImageUrl(String profileImageUrl) { this.profileImageUrl = profileImageUrl; }
+
+    public boolean isTeacher() { return isTeacher; }
+    public void setIsTeacher(boolean teacher) { this.isTeacher = teacher; }
 }
 
